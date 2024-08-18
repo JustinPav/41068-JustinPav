@@ -1,11 +1,26 @@
-# Ignore build artifacts
-/build/
-/install/
-/log/
+# Build Directories
+build/
+*-build/
+build-*/
 
-# Ignore other common files or directories
-*.pyc
-*.swp
-.DS_Store
-.idea/
+# Build Artifacts
+CMakeLists.txt.use*
+CMakeFiles/
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+#VS Code Artifacts
+ipch/
 .vscode/
+
+#Documentation
+latex
+html
