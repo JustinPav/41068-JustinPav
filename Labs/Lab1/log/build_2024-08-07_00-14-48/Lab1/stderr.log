@@ -1,0 +1,53 @@
+WARNING: Package name "Lab1" does not follow the naming conventions. It should start with a lower case letter and only contain lower case letters, digits, underscores, and dashes.
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kseonsor_msgs[m[K’ was not declared in this scope; did you mean ‘[01m[Ksensor_msgs[m[K’?
+   44 |     rclcpp::Subscription<[01;31m[Kseonsor_msgs[m[K::msg::Image>::SharedPtr image_subscriber_;
+      |                          [01;31m[K^~~~~~~~~~~~[m[K
+      |                          [32m[Ksensor_msgs[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:50:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   44 |     rclcpp::Subscription<seonsor_msgs::msg::Image[01;31m[K>[m[K::SharedPtr image_subscriber_;
+      |                                                  [01;31m[K^[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:50:[m[K [01;31m[Kerror: [m[Ktemplate argument 3 is invalid
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:50:[m[K [01;31m[Kerror: [m[Ktemplate argument 4 is invalid
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:50:[m[K [01;31m[Kerror: [m[Ktemplate argument 5 is invalid
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:53:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+   44 |     rclcpp::Subscription<seonsor_msgs::msg::Image>::[01;31m[KSharedPtr[m[K image_subscriber_;
+      |                                                     [01;31m[K^~~~~~~~~[m[K
+      |                                                              [32m[K;[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:63:[m[K [01;31m[Kerror: [m[K‘[01m[Kimage_subscriber_[m[K’ does not name a type
+   44 |     rclcpp::Subscription<seonsor_msgs::msg::Image>::SharedPtr [01;31m[Kimage_subscriber_[m[K;
+      |                                                               [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:45:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kseonsor_msgs[m[K’ was not declared in this scope; did you mean ‘[01m[Ksensor_msgs[m[K’?
+   45 |     rclcpp::Publisher<[01;31m[Kseonsor_msgs[m[K::msg::Image>::SharedPtr image_publisher_;
+      |                       [01;31m[K^~~~~~~~~~~~[m[K
+      |                       [32m[Ksensor_msgs[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:45:47:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   45 |     rclcpp::Publisher<seonsor_msgs::msg::Image[01;31m[K>[m[K::SharedPtr image_publisher_;
+      |                                               [01;31m[K^[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:45:50:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+   45 |     rclcpp::Publisher<seonsor_msgs::msg::Image>::[01;31m[KSharedPtr[m[K image_publisher_;
+      |                                                  [01;31m[K^~~~~~~~~[m[K
+      |                                                           [32m[K;[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:45:50:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint ImageProcessor::SharedPtr[m[K’
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:44:53:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint ImageProcessor::SharedPtr[m[K’
+   44 |     rclcpp::Subscription<seonsor_msgs::msg::Image>::[01;36m[KSharedPtr[m[K image_subscriber_;
+      |                                                     [01;36m[K^~~~~~~~~[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:45:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kimage_publisher_[m[K’ does not name a type; did you mean ‘[01m[Krmw_publisher_t[m[K’?
+   45 |     rclcpp::Publisher<seonsor_msgs::msg::Image>::SharedPtr [01;31m[Kimage_publisher_[m[K;
+      |                                                            [01;31m[K^~~~~~~~~~~~~~~~[m[K
+      |                                                            [32m[Krmw_publisher_t[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:[m[K In constructor ‘[01m[KImageProcessor::ImageProcessor()[m[K’:
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:13:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kimage_subscriber_[m[K’ was not declared in this scope
+   13 |         [01;31m[Kimage_subscriber_[m[K = this->create_subscription<sensor_msgs::msg::Image>("camera/image_raw", 10, std::bind(&ImageProcessor::imageCallback, this, std::placeholders::_1));
+      |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:15:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kimage_publisher_[m[K’ was not declared in this scope; did you mean ‘[01m[Kcreate_publisher[m[K’?
+   15 |         [01;31m[Kimage_publisher_[m[K = this->create_publisher<sensor_msgs::msg::Image>("camera/image_modified", 10);
+      |         [01;31m[K^~~~~~~~~~~~~~~~[m[K
+      |         [32m[Kcreate_publisher[m[K
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:[m[K In member function ‘[01m[Kvoid ImageProcessor::imageCallback(const ConstSharedPtr&)[m[K’:
+[01m[K/home/student/ros2_ws/src/robo1/Lab1/src/lab.cpp:41:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kimage_publisher_[m[K’ was not declared in this scope; did you mean ‘[01m[Kcreate_publisher[m[K’?
+   41 |         [01;31m[Kimage_publisher_[m[K.publish(cv_ptr->toImageMsg());
+      |         [01;31m[K^~~~~~~~~~~~~~~~[m[K
+      |         [32m[Kcreate_publisher[m[K
+gmake[2]: *** [CMakeFiles/image_processor.dir/build.make:76: CMakeFiles/image_processor.dir/src/lab.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/image_processor.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2
