@@ -29,7 +29,7 @@ function(ament_cmake_uninstall_target_remove_empty_directories path)
 endfunction()
 
 # uninstall files installed using the standard install() function
-set(install_manifest "/home/student/ros2_ws/src/robo1/Lab1/build/install_manifest.txt")
+set(install_manifest "/home/student/git/41068-JustinPav/Labs/Lab1/build/install_manifest.txt")
 if(NOT EXISTS "${install_manifest}")
   message(FATAL_ERROR "Cannot find install manifest: ${install_manifest}")
 endif()

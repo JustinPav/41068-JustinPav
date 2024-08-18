@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/student/ros2_ws/src/robo1/Lab1
+CMAKE_SOURCE_DIR = /home/student/git/41068-JustinPav/Labs/Lab1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/student/ros2_ws/src/robo1/Lab1/build
+CMAKE_BINARY_DIR = /home/student/git/41068-JustinPav/Labs/Lab1/build
 
 # Utility rule file for uninstall.
 
@@ -78,6 +78,6 @@ CMakeFiles/uninstall.dir/clean:
 .PHONY : CMakeFiles/uninstall.dir/clean
 
 CMakeFiles/uninstall.dir/depend:
-	cd /home/student/ros2_ws/src/robo1/Lab1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/student/ros2_ws/src/robo1/Lab1 /home/student/ros2_ws/src/robo1/Lab1 /home/student/ros2_ws/src/robo1/Lab1/build /home/student/ros2_ws/src/robo1/Lab1/build /home/student/ros2_ws/src/robo1/Lab1/build/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/student/git/41068-JustinPav/Labs/Lab1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/student/git/41068-JustinPav/Labs/Lab1 /home/student/git/41068-JustinPav/Labs/Lab1 /home/student/git/41068-JustinPav/Labs/Lab1/build /home/student/git/41068-JustinPav/Labs/Lab1/build /home/student/git/41068-JustinPav/Labs/Lab1/build/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/uninstall.dir/depend
 

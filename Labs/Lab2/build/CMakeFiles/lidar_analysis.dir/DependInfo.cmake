@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/student/ros2_ws/src/robo1/Lab2/src/lab.cpp" "CMakeFiles/lidar_analysis.dir/src/lab.cpp.o" "gcc" "CMakeFiles/lidar_analysis.dir/src/lab.cpp.o.d"
+  "/home/student/git/41068-JustinPav/Labs/Lab2/src/lab.cpp" "CMakeFiles/lidar_analysis.dir/src/lab.cpp.o" "gcc" "CMakeFiles/lidar_analysis.dir/src/lab.cpp.o.d"
   )
 
 # Targets to which this target links.
