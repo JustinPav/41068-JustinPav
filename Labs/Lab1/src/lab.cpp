@@ -31,9 +31,9 @@ private:
 
         // Draw a circle at the center of the image
         cv::Point center(cv_ptr->image.cols / 2, cv_ptr->image.rows / 2);
-        int radius = 100; // Radius of the circle
+        int radius = 100;              // Radius of the circle
         cv::Scalar color(146, 255, 0); // Green color
-        int thickness = 5; // Thickness of the circle border
+        int thickness = 5;             // Thickness of the circle border
         cv::circle(cv_ptr->image, center, radius, color, thickness);
 
         // Publish the modified image
