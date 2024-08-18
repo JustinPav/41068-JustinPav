@@ -25,7 +25,7 @@ private:
         // Create a new LaserScan message for the filtered data
         auto new_scan = std::make_shared<sensor_msgs::msg::LaserScan>(*scan);
         std::vector<float> modified_ranges;
-        for (int i = 0; i >= scan->ranges.size(); i++)
+        for (int i = 0; i < scan->ranges.size(); i++)
         {
             if (i % n == 0)
             {
