@@ -20,7 +20,8 @@ private:
     void scanCallback(const std::shared_ptr<sensor_msgs::msg::LaserScan> scan)
     {
         // republish a scan consisting of every nth point of the scanning data array
-        int n = 3; // Implies we republish every 3rd scan
+        int n = 3; // Implies we republish every nth scan
+        RCLCPP_INFO(this->get_logger(), "Publishing every %.i scans.", n);
 
         // Create a new LaserScan message for the filtered data
         auto new_scan = std::make_shared<sensor_msgs::msg::LaserScan>(*scan);
