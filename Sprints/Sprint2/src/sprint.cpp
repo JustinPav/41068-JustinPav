@@ -8,7 +8,7 @@
 class SimpleLocalizer : public rclcpp::Node
 {
 public:
-    SimpleLocalizer() : Node("simple_localizer"), angle_difference_(0.0), relative_orientation_(0.0)
+    SimpleLocalizer() : Node("simple_localizer"), origin_x_(-2.95), origin_y_(-2.57), resolution_(0.05), angle_difference_(0.0), relative_orientation_(0.0)
     {
         scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
             "/scan", 10, std::bind(&SimpleLocalizer::scanCallback, this, std::placeholders::_1));
@@ -18,7 +18,10 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "Localizer Node started.");
 
-        map_ = cv::imread("~/Maps/my_map.pgm", cv::IMREAD_GRAYSCALE);
+        const char *home = std::getenv("HOME");
+        std::string map_path = std::string(home) + "/Maps/my_map.pgm";
+        cv::Mat small_map = cv::imread(map_path, cv::IMREAD_GRAYSCALE);
+        cv::resize(small_map, map_, cv::Size(500, 500), cv::INTER_LINEAR);
         cv::imshow("Map", map_);
         cv::waitKey(1);
         if (map_.empty())
@@ -37,6 +40,7 @@ private:
         geometry_msgs::msg::Twist cmd;
         double angular_gain{1.0};
         cmd.angular.z = angular_gain * angle_difference_;
+        RCLCPP_INFO(this->get_logger(), "Rotating the the robot at %f rad/s", cmd.angular.z);
         cmd_publisher_->publish(cmd);
     }
 
@@ -51,15 +55,36 @@ private:
 
     void extractMapSection()
     {
-        int section_size = 100;
-        cv::Rect region(current_pose_.x - section_size / 2, current_pose_.y - section_size / 2, section_size, section_size);
+        int section_size = 600; // size of the map section to extract in pixels
 
-        if (region.x >= 0 && region.y >= 0 && region.x + region.width < map_.cols && region.y + region.height < map_.rows)
+        // Convert the robot's current pose from meters to map pixels
+        int map_x = static_cast<int>((current_pose_.x - origin_x_) / resolution_);
+        int map_y = static_cast<int>((map_.rows - (current_pose_.y - origin_y_) / resolution_)); // Correct inversion of y-axis
+
+        // Handle out-of-bound coordinates by ensuring the region stays within valid bounds
+        int x_start = std::max(0, map_x - section_size / 2);
+        int y_start = std::max(0, map_y - section_size / 2);
+        int x_end = std::min(map_.cols, map_x + section_size / 2);
+        int y_end = std::min(map_.rows, map_y + section_size / 2);
+
+        // Define the region of interest around the robot's location
+        cv::Rect region(x_start, y_start, x_end - x_start, y_end - y_start);
+
+        if (region.width > 0 && region.height > 0 && region.x + region.width <= map_.cols && region.y + region.height <= map_.rows)
         {
             cv::Mat map_section = map_(region);
-            cv::Canny(map_section, map_edge_, 100, 200);
+            cv::Mat img_blur;
+            GaussianBlur(map_section, img_blur, cv::Size(3, 3), 0, 0);
+            // Apply edge detection
+            cv::Canny(img_blur, map_edge_, 100, 200);
+
+            // Visualize the edge map
             cv::imshow("Edge Map", map_edge_);
             cv::waitKey(1);
+        }
+        else
+        {
+            RCLCPP_ERROR(this->get_logger(), "Extracted region out of bounds or invalid!");
         }
     }
 
@@ -138,6 +163,10 @@ private:
             dstPoints.push_back(keypoints2[match.trainIdx].pt);
         }
     }
+
+    double origin_x_;
+    double origin_y_;
+    double resolution_;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_publisher_;
