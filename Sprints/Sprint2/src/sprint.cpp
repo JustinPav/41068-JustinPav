@@ -43,7 +43,7 @@ private:
             cv::waitKey(1);
             calculateYawChange();
             geometry_msgs::msg::Twist cmd;
-            double angular_gain = 0.1;
+            double angular_gain = 0.01;
             cmd.angular.z = angular_gain * angle_difference_;
             RCLCPP_INFO(this->get_logger(), "Rotating the the robot at %f rad/s", cmd.angular.z);
             cmd_publisher_->publish(cmd);
@@ -68,15 +68,19 @@ private:
     {
         RCLCPP_INFO(this->get_logger(), "Received occupancy grid with dimensions: width = %d, height = %d", msg->info.width, msg->info.height);
         map_ = occupancyGridToImage(msg);
-        cv::rotate(map_, map_, cv::ROTATE_90_COUNTERCLOCKWISE);
+        double scale_factor = 2;
+        cv::resize(map_, map_, cv::Size(), scale_factor, scale_factor, cv::INTER_NEAREST);
         cv::imshow("Map", map_);
         cv::waitKey(1);
+        size_x_ = size_x_ * scale_factor;
+        size_y_ = size_y_ * scale_factor;
+        resolution_ = resolution_ / 2;
         map_collected_ = true;
     }
 
     void extractMapSection()
     {
-        double scaling_factor = 0.7; // Adjust this scaling factor as needed
+        double scaling_factor = 0.8; // Adjust this scaling factor as needed
         int half_width = static_cast<int>((scaling_factor * size_x_) / 2);
         int half_height = static_cast<int>((scaling_factor * size_y_) / 2);
 
@@ -173,7 +177,7 @@ private:
     {
         // Detect and match features between the first and second images
         std::vector<cv::Point2f> srcPoints, dstPoints;
-        detectAndMatchFeatures(laser_map_, map_edge_, srcPoints, dstPoints);
+        detectAndMatchFeatures(map_edge_, laser_map_, srcPoints, dstPoints);
 
         if (srcPoints.size() < 3 || dstPoints.size() < 3)
         {
