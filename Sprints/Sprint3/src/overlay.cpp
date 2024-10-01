@@ -51,9 +51,9 @@ private:
         // Calculate the scale factor to match the resolutions
         double scale_factor = map_resolution_ / grid_resolution;
 
-        // Resize the static map to match the occupancy grid resolution using INTER_LINEAR for better quality
+        // Resize the static map to match the occupancy grid resolution using INTER_AREA
         cv::Mat resized_static_map;
-        cv::resize(static_map_image_color_, resized_static_map, cv::Size(), scale_factor, scale_factor, cv::INTER_LINEAR);
+        cv::resize(static_map_image_color_, resized_static_map, cv::Size(), scale_factor, scale_factor, cv::INTER_AREA);
 
         // Convert the occupancy grid data into an OpenCV image
         cv::Mat occupancy_grid_image(grid_height, grid_width, CV_8UC1, cv::Scalar(128)); // Default to gray for unknown

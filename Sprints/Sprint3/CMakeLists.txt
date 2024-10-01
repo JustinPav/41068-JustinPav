@@ -27,15 +27,15 @@ add_executable(map_overlay src/overlay.cpp)
 ament_target_dependencies(map_overlay rclcpp sensor_msgs geometry_msgs nav_msgs cv_bridge OpenCV)
 
 # Add executables
-#add_executable(circle_detector src/sprint.cpp)
+add_executable(circle_detector src/sprint.cpp)
 
 # Link libraries
-#ament_target_dependencies(circle_detector rclcpp sensor_msgs geometry_msgs nav_msgs cv_bridge OpenCV)
+ament_target_dependencies(circle_detector rclcpp sensor_msgs geometry_msgs nav_msgs cv_bridge OpenCV)
 
 # Install executables
 install(TARGETS
   map_overlay
-  #circle_detector
+  circle_detector
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
