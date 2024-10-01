@@ -146,35 +146,84 @@ private:
 
     void detectArc(const std::vector<std::pair<double, double>> &cluster, std::vector<std::pair<double, double>> &circle_centers)
     {
+        if (cluster.size() < 4)
+        {
+            return; // We need at least 4 points to verify the arc condition
+        }
+
         const double target_radius = cylinder_diameter_ / 2.0;
-        const double radius_tolerance = 0.02; // Allowable deviation from the target radius (adjust as needed)
+        const double radius_tolerance = 0.05; // Allowable deviation from the target radius (adjust as needed)
+        std::vector<std::pair<double, double>> potential_centers;
+        std::vector<double> radii;
 
-        // Calculate the centroid of the points in the cluster
-        double sum_x = 0.0;
-        double sum_y = 0.0;
-        for (const auto &point : cluster)
+        // Iterate through combinations of points in the cluster
+        for (size_t i = 0; i < cluster.size() - 2; ++i)
         {
-            sum_x += point.first;
-            sum_y += point.second;
+            for (size_t j = i + 1; j < cluster.size() - 1; ++j)
+            {
+                for (size_t k = j + 1; k < cluster.size(); ++k)
+                {
+                    std::pair<double, double> center;
+                    double radius;
+
+                    if (calculateCircleFromThreePoints(cluster.at(i), cluster.at(j), cluster.at(k), radius, center))
+                    {
+                        potential_centers.push_back(center);
+                        radii.push_back(radius);
+                    }
+                }
+            }
         }
 
-        double centroid_x = sum_x / cluster.size();
-        double centroid_y = sum_y / cluster.size();
-
-        // Calculate the average radius from the centroid
-        double avg_radius = 0.0;
-        for (const auto &point : cluster)
+        // Calculate the mean center and radius from all potential circles
+        if (!potential_centers.empty())
         {
-            avg_radius += std::hypot(point.first - centroid_x, point.second - centroid_y);
-        }
-        avg_radius /= cluster.size();
+            double avg_x = 0.0, avg_y = 0.0, avg_radius = 0.0;
+            for (size_t i = 0; i < potential_centers.size(); ++i)
+            {
+                avg_x += potential_centers[i].first;
+                avg_y += potential_centers[i].second;
+                avg_radius += radii[i];
+            }
+            avg_x /= potential_centers.size();
+            avg_y /= potential_centers.size();
+            avg_radius /= potential_centers.size();
 
-        // Check if the average radius matches the target radius within the given tolerance
-        if (std::abs(avg_radius - target_radius) <= radius_tolerance)
-        {
-            // Add the center of the detected arc to the list of detected cylinder centers
-            circle_centers.push_back({centroid_x, centroid_y});
+            // Check if the average radius is within the tolerance range
+            if (std::abs(avg_radius - target_radius) <= radius_tolerance)
+            {
+                circle_centers.push_back({avg_x, avg_y});
+            }
         }
+    }
+
+    bool calculateCircleFromThreePoints(const std::pair<double, double> &p1,
+                                        const std::pair<double, double> &p2,
+                                        const std::pair<double, double> &p3,
+                                        double &radius,
+                                        std::pair<double, double> &center)
+    {
+        double x1 = p1.first, y1 = p1.second;
+        double x2 = p2.first, y2 = p2.second;
+        double x3 = p3.first, y3 = p3.second;
+
+        double ma = (y2 - y1) / (x2 - x1);
+        double mb = (y3 - y2) / (x3 - x2);
+
+        // Check for collinearity (parallel slopes)
+        if (std::abs(ma - mb) < 1e-6)
+        {
+            return false; // The points are collinear, can't form a circle
+        }
+
+        // Calculate center of the circle
+        double cx = (ma * mb * (y1 - y3) + mb * (x1 + x2) - ma * (x2 + x3)) / (2 * (mb - ma));
+        double cy = -1 / ma * (cx - (x1 + x2) / 2) + (y1 + y2) / 2;
+
+        center = {cx, cy};
+        radius = std::sqrt(std::pow(cx - x1, 2) + std::pow(cy - y1, 2));
+
+        return true;
     }
 
     void drawOnMap(double x, double y)
