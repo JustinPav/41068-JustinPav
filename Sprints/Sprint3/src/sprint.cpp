@@ -1,8 +1,12 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include <opencv2/opencv.hpp>
 #include <cmath>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 class CylinderDetector : public rclcpp::Node
 {
@@ -14,6 +18,9 @@ public:
 
         map_subscriber_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             "/map", 10, std::bind(&CylinderDetector::mapCallback, this, std::placeholders::_1));
+
+        odom_subscriber_ = this->create_subscription<nav_msgs::msg::Odometry>(
+            "/odom", 10, std::bind(&CylinderDetector::odomCallback, this, std::placeholders::_1));
     }
 
 private:
@@ -152,7 +159,7 @@ private:
         }
 
         const double target_radius = cylinder_diameter_ / 2.0;
-        const double radius_tolerance = 0.05; // Allowable deviation from the target radius (adjust as needed)
+        const double radius_tolerance = 0.05; // Allowable deviation from the target radius
         std::vector<std::pair<double, double>> potential_centers;
         std::vector<double> radii;
 
@@ -203,6 +210,7 @@ private:
                                         double &radius,
                                         std::pair<double, double> &center)
     {
+        double tol = 0.05;
         double x1 = p1.first, y1 = p1.second;
         double x2 = p2.first, y2 = p2.second;
         double x3 = p3.first, y3 = p3.second;
@@ -211,7 +219,7 @@ private:
         double mb = (y3 - y2) / (x3 - x2);
 
         // Check for collinearity (parallel slopes)
-        if (std::abs(ma - mb) < 1e-6)
+        if (std::abs(ma - mb) < tol)
         {
             return false; // The points are collinear, can't form a circle
         }
@@ -226,13 +234,27 @@ private:
         return true;
     }
 
+    void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
+    {
+        current_pose_ = msg->pose.pose;
+    }
+
     void drawOnMap(double x, double y)
     {
-        // Transform the coordinates (x, y) to the map's coordinate frame
-        int map_x = static_cast<int>((x - map_msg_.info.origin.position.x) / map_msg_.info.resolution);
-        int map_y = static_cast<int>((y - map_msg_.info.origin.position.y) / map_msg_.info.resolution);
+        // Transform the cylinder coordinates to the map frame
+        double theta = tf2::getYaw(current_pose_.orientation);
+        double robot_x = current_pose_.position.x;
+        double robot_y = current_pose_.position.y;
 
-        // Make sure the coordinates are within bounds
+        // Rotate and translate the cylinder's local position to the map frame
+        double map_x_cylinder = robot_x + x * cos(theta) - y * sin(theta);
+        double map_y_cylinder = robot_y + x * sin(theta) + y * cos(theta);
+
+        // Convert map coordinates to image coordinates
+        int map_x = static_cast<int>((map_x_cylinder - map_msg_.info.origin.position.x) / map_msg_.info.resolution);
+        int map_y = static_cast<int>((map_y_cylinder - map_msg_.info.origin.position.y) / map_msg_.info.resolution);
+
+        // Ensure coordinates are within bounds
         if (map_x >= 0 && map_x < map_image_.cols && map_y >= 0 && map_y < map_image_.rows)
         {
             // Draw a green circle representing the detected cylinder
@@ -246,7 +268,9 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_subscriber_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber_;
 
+    geometry_msgs::msg::Pose current_pose_;
     nav_msgs::msg::OccupancyGrid map_msg_;
     cv::Mat map_image_;
     bool map_received_;
