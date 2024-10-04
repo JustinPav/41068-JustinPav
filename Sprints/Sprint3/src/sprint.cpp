@@ -7,11 +7,14 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 class CylinderDetector : public rclcpp::Node
 {
 public:
-    CylinderDetector() : Node("cylinder_detector"), map_received_(false), cylinder_diameter_(0.3)
+    CylinderDetector() : Node("cylinder_detector"), map_received_(false), cylinder_diameter_(0.3), tf_buffer_(this->get_clock()), tf_listener_(std::make_shared<tf2_ros::TransformListener>(tf_buffer_))
     {
         scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
             "/scan", 10, std::bind(&CylinderDetector::scanCallback, this, std::placeholders::_1));
@@ -29,7 +32,6 @@ private:
         map_msg_ = *msg;
         map_received_ = true;
         map_image_ = occupancyGridToImage(msg);
-
         cv::imshow("Occupancy Grid", map_image_);
         cv::waitKey(1);
     }
@@ -236,19 +238,41 @@ private:
 
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
-        current_pose_ = msg->pose.pose;
+        geometry_msgs::msg::PoseStamped pose_in_odom;
+        pose_in_odom.header = msg->header;
+        pose_in_odom.pose = msg->pose.pose;
+        geometry_msgs::msg::PoseStamped pose_in_map;
+
+        try
+        {
+            // Lookup the transform from "odom" to "map"
+            geometry_msgs::msg::TransformStamped transform_stamped = tf_buffer_.lookupTransform("map", "odom", tf2::TimePointZero);
+
+            // Transform the pose from odom to map frame
+            tf2::doTransform(pose_in_odom, pose_in_map, transform_stamped);
+
+            current_pose_ = pose_in_map.pose;
+            // Now current_pose_ contains the robot's pose in the map frame
+        }
+        catch (tf2::TransformException &ex)
+        {
+            RCLCPP_WARN(this->get_logger(), "Could not transform odom to map: %s", ex.what());
+        }
     }
 
     void drawOnMap(double x, double y)
     {
         // Transform the cylinder coordinates to the map frame
-        double theta = tf2::getYaw(current_pose_.orientation);
+        tf2::Quaternion q(current_pose_.orientation.x, current_pose_.orientation.y, current_pose_.orientation.z, current_pose_.orientation.w);
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
         double robot_x = current_pose_.position.x;
         double robot_y = current_pose_.position.y;
 
         // Rotate and translate the cylinder's local position to the map frame
-        double map_x_cylinder = robot_x + x * cos(theta) - y * sin(theta);
-        double map_y_cylinder = robot_y + x * sin(theta) + y * cos(theta);
+        double map_x_cylinder = robot_x + x * cos(yaw) - y * sin(yaw);
+        double map_y_cylinder = robot_y + x * sin(yaw) + y * cos(yaw);
 
         // Convert map coordinates to image coordinates
         int map_x = static_cast<int>((map_x_cylinder - map_msg_.info.origin.position.x) / map_msg_.info.resolution);
@@ -275,6 +299,9 @@ private:
     cv::Mat map_image_;
     bool map_received_;
     const double cylinder_diameter_;
+
+    tf2_ros::Buffer tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 };
 
 int main(int argc, char *argv[])
