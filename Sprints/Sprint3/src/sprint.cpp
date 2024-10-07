@@ -301,7 +301,7 @@ private:
                                         double &radius,
                                         std::pair<double, double> &center)
     {
-        double tol = 0.0001;
+        double tol = 0.05;
         double x1 = p1.first, y1 = p1.second;
         double x2 = p2.first, y2 = p2.second;
         double x3 = p3.first, y3 = p3.second;
