@@ -285,7 +285,7 @@ private:
      * @brief Calculates the center and radius of a circle from three given points.
      * This function determines the circle that passes through three non-collinear points
      * by calculating the circle's center and radius. If the points are collinear,
-     * the function returns `false`, as no circle can be formed.
+     * the function returns `false`, as no circle can be formed. https://math.stackexchange.com/questions/213658/get-the-equation-of-a-circle-when-given-3-points
      *
      * @param p1 A pair representing the coordinates (x, y) of the first point.
      * @param p2 A pair representing the coordinates (x, y) of the second point.
