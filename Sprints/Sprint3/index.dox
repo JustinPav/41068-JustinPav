@@ -1,0 +1,67 @@
+/*!
+
+*/
+
+// without this gap between two doxygen definition, the last group does not get
+// populated properly for some reason.
+
+/*!
+@mainpage Sprint 3: Justin Pavlovski - 14260816
+
+@section map_overlay Map Overlay
+While performing a SLAM task in order to map out an environment, thie map_overlay node will overlay the current occupancy grid in red over the top of the ground truth map.
+In order to run this node, please use the following inputs in the terminal
+Open the gazebo environment:
+* \code{.sh}
+* export TURTLEBOT3_MODEL=waffle_pi
+* ros2 launch turtlebot3_gazebo turtlebot3_warehouse.launch.py
+* \endcode 
+
+Begin the map overlay node:
+* \code{.sh}
+* ros2 run Sprint3 map_overlay
+* \endcode 
+
+Start the SLAM system:
+* \code{.sh}
+* ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=True
+* \endcode 
+
+Move the robot around to begin mapping:
+* \code{.sh}
+* export TURTLEBOT3_MODEL=waffle_pi
+* ros2 run turtlebot3_teleop teleop_keyboard
+* \endcode 
+
+Once that is done you should be able to see the below image gnereated by OpenCV
+<div style="text-align:center;">
+    <img src="Overlay.png" alt="OpenCV Overlay" width="1000">
+</div>
+
+
+@section circle_detector Circle Detector
+When running a SLAM task, you can run the circle_detector node to draw circles over the map where cylinders with 30cm diameter are detected.
+In order to run this node, please use the following inputs in the terminal
+Open the gazebo environment:
+* \code{.sh}
+* export TURTLEBOT3_MODEL=waffle_pi
+* ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+* \endcode 
+
+Start the SLAM system:
+* \code{.sh}
+* ros2 launch turtlebot3_cartographer cartographer.launch.py use_sim_time:=True
+* \endcode 
+
+Begin the circel detection node:
+* \code{.sh}
+* ros2 run Sprint3 circle_detector
+* \endcode 
+
+Once running, the node should display an image similar to that seen below
+Once that is done you should be able to see the below image gnereated by OpenCV
+<div style="text-align:center;">
+    <img src="Circle.png" alt="OpenCV Circle Detector" width="200">
+</div>
+
+*/

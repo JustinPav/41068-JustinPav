@@ -1,3 +1,7 @@
+/**
+ * @file sprint.cpp
+ * @brief Node for detecting cylinders of 30cm diameter in a laser scan.
+ */
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
@@ -11,9 +15,17 @@
 #include <tf2_ros/buffer.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
+/**
+ * @class CylinderDetector
+ * @brief A ROS 2 node that detects cylinders of 30cm diameter in a laser scan.
+ */
 class CylinderDetector : public rclcpp::Node
 {
 public:
+    /**
+     * @brief Constructor for the CylinderDetector node.
+     * Initializes the node, subscribes to necessary topics, and sets up TF listener.
+     */
     CylinderDetector() : Node("cylinder_detector"), map_received_(false), cylinder_diameter_(0.3), tf_buffer_(this->get_clock()), tf_listener_(std::make_shared<tf2_ros::TransformListener>(tf_buffer_))
     {
         scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -27,6 +39,10 @@ public:
     }
 
 private:
+    /**
+     * @brief Callback for saving the map from the cartographer.
+     * @param msg Occupancy Grid scan message.
+     */
     void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     {
         map_msg_ = *msg;
@@ -36,6 +52,10 @@ private:
         cv::waitKey(1);
     }
 
+    /**
+     * @brief Converts an occupancy grid into a matrix so that it can be used in OpenCV.
+     * @param grid Occupancy Grid message.
+     */
     cv::Mat occupancyGridToImage(const nav_msgs::msg::OccupancyGrid::SharedPtr &grid)
     {
 
@@ -65,6 +85,10 @@ private:
         return image;
     }
 
+    /**
+     * @brief Callback for processing laser scan data. The scan message is inspected to detect arcs with radius of 30cm.
+     * @param msg Laser scan message.
+     */
     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
     {
         if (!map_received_)
@@ -109,6 +133,10 @@ private:
         }
     }
 
+    /**
+     * @brief Checks the global vector of circle points against the input parameter and adds any new points.
+     * @param circle_points vector of x and y points.
+     */
     void checkNewPoints(std::vector<std::pair<double, double>> circle_points)
     {
         double tolerance_for_new_circle = 0.5;
@@ -137,6 +165,10 @@ private:
         }
     }
 
+    /**
+     * @brief outputs a vector of points of the centre of circles within the laser scan points.
+     * @param points vector of x and y points from a laser scan.
+     */
     std::vector<std::pair<double, double>> detectCircleClusters(std::vector<std::pair<double, double>> points)
     {
         std::vector<std::pair<double, double>> circle_centers;
@@ -191,6 +223,11 @@ private:
         return circle_centers;
     }
 
+    /**
+     * @brief determines wheter or not a cluster of points from a laser scan is in an arc and if so where the centre of the arc is located.
+     * @param cluster the input cluster of points.
+     * @param circle_centers the output estemation for the circles centre.
+     */
     void detectArc(const std::vector<std::pair<double, double>> &cluster, std::vector<std::pair<double, double>> &circle_centers)
     {
         if (cluster.size() < 5)
@@ -244,6 +281,20 @@ private:
         }
     }
 
+    /**
+     * @brief Calculates the center and radius of a circle from three given points.
+     * This function determines the circle that passes through three non-collinear points
+     * by calculating the circle's center and radius. If the points are collinear,
+     * the function returns `false`, as no circle can be formed.
+     *
+     * @param p1 A pair representing the coordinates (x, y) of the first point.
+     * @param p2 A pair representing the coordinates (x, y) of the second point.
+     * @param p3 A pair representing the coordinates (x, y) of the third point.
+     * @param[out] radius A reference to a double that will store the calculated radius of the circle.
+     * @param[out] center A reference to a pair that will store the calculated center (x, y) of the circle.
+     *
+     * @return `true` if the circle was successfully calculated, `false` if the points are collinear.
+     */
     bool calculateCircleFromThreePoints(const std::pair<double, double> &p1,
                                         const std::pair<double, double> &p2,
                                         const std::pair<double, double> &p3,
@@ -274,6 +325,10 @@ private:
         return true;
     }
 
+    /**
+     * @brief Callback for processing the robots odometry in the map co-ordinate frame.
+     * @param msg Odometry message.
+     */
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         if (!map_received_)
@@ -303,6 +358,11 @@ private:
         }
     }
 
+    /**
+     * @brief Draws a circle on the map at point (x,y).
+     * @param x x co-ordinate for the cylinder.
+     * @param y y co-ordinate for the cylinder.
+     */
     void drawOnMap(double x, double y)
     {
         // Convert map coordinates to image coordinates
@@ -321,6 +381,10 @@ private:
         cv::waitKey(1);
     }
 
+    /**
+     * @brief Converts a vector of points from the robots frame into the map co-ordinate frame.
+     * @param points the input and output vector of points to be converted to the map frame.
+     */
     void convertToMapFrame(std::vector<std::pair<double, double>> &points)
     {
         // Transform the points to the map frame using the current robot pose
@@ -343,6 +407,7 @@ private:
         }
     }
 
+    // Data members
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_subscriber_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber_;
@@ -359,6 +424,9 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 };
 
+/**
+ * @brief Main function for the CylinderDetector node.
+ */
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);

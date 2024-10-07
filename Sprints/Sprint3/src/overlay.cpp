@@ -1,11 +1,24 @@
+/**
+ * @file overlay.cpp
+ * @brief Node for overlaying an occupancy grid map on a static map using OpenCV.
+ */
+
 #include <memory>
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 
+/**
+ * @class MapOverlayNode
+ * @brief A ROS 2 node that overlays an occupancy grid map on a static map image.
+ */
 class MapOverlayNode : public rclcpp::Node
 {
 public:
+    /**
+     * @brief Constructor for the MapOverlayNode.
+     * Initializes the node, loads the static map, and subscribes to the occupancy grid topic.
+     */
     MapOverlayNode() : Node("map_overlay_node")
     {
         // Load the static map image
@@ -19,6 +32,7 @@ public:
             return;
         }
 
+        // Map properties
         map_resolution_ = 0.01;
         map_origin_x_ = -5.8;
         map_origin_y_ = -11;
@@ -40,6 +54,10 @@ public:
     }
 
 private:
+    /**
+     * @brief Callback for the occupancy grid subscription.
+     * @param msg Occupancy grid message.
+     */
     void occupancyGridCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     {
         int grid_width = msg->info.width;
@@ -106,19 +124,22 @@ private:
         cv::waitKey(1);
     }
 
+    // Data members
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_sub_;
     cv::Mat static_map_image_;
     cv::Mat static_map_image_color_;
     double map_resolution_;
-    double map_origin_x_, map_origin_y_;
+    double map_origin_x_;
+    double map_origin_y_;
 };
 
-int main(int argc, char **argv)
+/**
+ * @brief Main function for the MapOverlayNode.
+ */
+int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<MapOverlayNode>();
-    rclcpp::spin(node);
+    rclcpp::spin(std::make_shared<MapOverlayNode>());
     rclcpp::shutdown();
-    cv::destroyAllWindows();
     return 0;
 }
