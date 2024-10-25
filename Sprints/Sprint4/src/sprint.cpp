@@ -226,7 +226,7 @@ private:
                 vel_publisher_->publish(twist_msg);
 
                 // Track angle covered, complete after one circle
-                double adjustment_factor = 0.6;
+                double adjustment_factor = 0.68;
                 current_angle_ += rotVel * 0.1 * adjustment_factor;
                 RCLCPP_INFO(this->get_logger(), "Rotated %f degrees around the cylinder", current_angle_ * (180 / M_PI));
                 if (current_angle_ >= 2 * M_PI)
@@ -333,7 +333,7 @@ private:
         if (fabs(angle_diff) > M_PI / 180) // If the difference is significant, keep rotating
         {
             geometry_msgs::msg::Twist twist_msg;
-            twist_msg.angular.z = (angle_diff > 0) ? 0.2 : -0.2; // Rotate to align with the target
+            twist_msg.angular.z = (angle_diff > 0) ? 0.1 : -0.1; // Rotate to align with the target
             vel_publisher_->publish(twist_msg);
             return false; // Still turning
         }
