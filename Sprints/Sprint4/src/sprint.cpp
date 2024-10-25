@@ -22,7 +22,7 @@ public:
      * @brief Constructor for the CylinderDetector node.
      * Initializes the node, subscribes to necessary topics, and sets up TF listener.
      */
-    CylinderDetector() : Node("cylinder_detector"), cylinder_diameter_(0.3), circumnavigation_active_(false), align_to_center_active_(false), move_to_distance_active_(false)
+    CylinderDetector() : Node("cylinder_detector"), cylinder_diameter_(0.3), circumnavigation_active_(false), move_to_point_c_(false), drive_around_cylinder_(false)
     {
         resolution_ = 0.05;
         origin_x_ = -7.0;
@@ -132,72 +132,186 @@ private:
         center_y_ = center_y;
 
         circumnavigation_active_ = true;
-        align_to_center_active_ = true;
-        move_to_distance_active_ = true;
+        move_to_point_c_ = true;
+        drive_around_cylinder_ = false;
     }
 
     void timerCallback()
     {
-        if (align_to_center_active_)
-        {
-            // Turn the TurtleBot to face the center
-            if (!turnToFaceCenter())
-            {
-                circumnavigation_active_ = false;
-                align_to_center_active_ = true;
-                move_to_distance_active_ = false;
-                RCLCPP_INFO(this->get_logger(), "Still Turning");
-                return; // Still turning, exit the callback and continue in the next timer iteration
-            }
-
-            // Once aligned, proceed to move towards the center
-            align_to_center_active_ = false;
-            move_to_distance_active_ = true;
-        }
-
-        if (move_to_distance_active_)
-        {
-            // Move the TurtleBot to the desired distance from the center (0.25 meters)
-            if (!moveToDistanceFromCenter(0.25))
-            {
-                circumnavigation_active_ = false;
-                align_to_center_active_ = false;
-                move_to_distance_active_ = true;
-                RCLCPP_INFO(this->get_logger(), "Still Moving");
-                return; // Still moving, exit the callback and continue in the next timer iteration
-            }
-
-            // Once at the correct distance, start circumnavigation
-            move_to_distance_active_ = false;
-            circumnavigation_active_ = true;
-            current_angle_ = 0.0;
-        }
-
         if (circumnavigation_active_)
         {
-            RCLCPP_INFO(this->get_logger(), "Circumnavigation active");
-            geometry_msgs::msg::Twist twist_msg;
-            double speed = 0.2;  // Linear speed (m/s)
-            double radius = 0.5; // Circumnavigation radius
-
-            twist_msg.linear.x = speed;
-            twist_msg.angular.z = speed / radius;
-
-            vel_publisher_->publish(twist_msg);
-
-            // Track angle covered, complete after one circle
-            current_angle_ += (speed / radius) * 0.1;
-            if (current_angle_ >= 2 * M_PI)
+            double rotVel{0};
+            double linearVel{0};
+            if (move_to_point_c_)
             {
-                circumnavigation_active_ = false;
-                RCLCPP_INFO(this->get_logger(), "Completed circumnavigation");
-                sendSavedGoalToNav2();
+                std::pair<double, double> point_c = calculatePointC(center_x_, center_y_);
+                typedef enum
+                {
+                    TURNING,
+                    DRIVING,
+                } vehicleStatus;
+                vehicleStatus status;
+                double deltaTheta = calculateDeltaTheta(point_c);
+                double dist = hypot(current_pose_.position.x - point_c.first, current_pose_.position.y - point_c.second);
+                if (abs(deltaTheta) > M_PI / 18)
+                {
+                    status = TURNING;
+                }
+                else
+                {
+                    status = DRIVING;
+                }
+
+                switch (status)
+                {
+                case TURNING:
+                    linearVel = 0;
+                    // scaler multiple to control the turning velocity
+                    rotVel = 0.5 * deltaTheta;
+                    if (rotVel > 0.5)
+                    {
+                        rotVel = 0.5;
+                    }
+                    if (rotVel < -0.5)
+                    {
+                        rotVel = -0.5;
+                    }
+                    break;
+                case DRIVING:
+                    rotVel = 0;
+                    linearVel = 0.5 * abs(dist);
+                    if (linearVel > 0.5)
+                    {
+                        linearVel = 0.5;
+                    }
+                    break;
+                }
+                geometry_msgs::msg::Twist twist_msg;
+                twist_msg.linear.x = linearVel;
+                twist_msg.angular.z = rotVel;
+                vel_publisher_->publish(twist_msg);
+                RCLCPP_INFO(this->get_logger(), "%f is distance", dist);
+                if (abs(dist) < 0.1)
+                {
+                    twist_msg.linear.x = 0;
+                    twist_msg.angular.z = 0;
+                    vel_publisher_->publish(twist_msg);
+                    move_to_point_c_ = false;
+                }
+            }
+            else if (!move_to_point_c_ && !drive_around_cylinder_)
+            {
+                std::pair<double, double> center = std::make_pair(center_x_, center_y_);
+                checkTangent();
+                double deltaTheta = calculateDeltaTheta(center);
+                RCLCPP_INFO(this->get_logger(), "%f is angle", deltaTheta * (180 / M_PI));
+                if (abs(deltaTheta - M_PI / 2) < M_PI / 60)
+                {
+                    geometry_msgs::msg::Twist twist_msg;
+                    twist_msg.linear.x = 0;
+                    twist_msg.angular.z = 0;
+                    vel_publisher_->publish(twist_msg);
+                    drive_around_cylinder_ = true;
+                }
+            }
+            else if (drive_around_cylinder_)
+            {
+                geometry_msgs::msg::Twist twist_msg;
+                linearVel = 0.2;          // Linear speed (m/s)
+                rotVel = linearVel / 0.8; // Circumnavigation radius
+
+                twist_msg.linear.x = linearVel;
+                twist_msg.angular.z = rotVel;
+
+                vel_publisher_->publish(twist_msg);
+
+                // Track angle covered, complete after one circle
+                double adjustment_factor = 0.6;
+                current_angle_ += rotVel * 0.1 * adjustment_factor;
+                RCLCPP_INFO(this->get_logger(), "Rotated %f degrees around the cylinder", current_angle_ * (180 / M_PI));
+                if (current_angle_ >= 2 * M_PI)
+                {
+                    geometry_msgs::msg::Twist twist_msg;
+                    twist_msg.linear.x = 0;
+                    twist_msg.angular.z = 0;
+                    vel_publisher_->publish(twist_msg);
+                    circumnavigation_active_ = false;
+                    RCLCPP_INFO(this->get_logger(), "Completed circumnavigation");
+                    sendSavedGoalToNav2();
+                }
             }
         }
     }
 
-    // Function to turn the TurtleBot to face the center of the cylinder
-    bool turnToFaceCenter()
+    std::pair<double, double> calculatePointC(double x, double y)
+    {
+        std::pair<double, double> point_c;
+        double desired_dist = 0.7;
+        double theta = atan2(current_pose_.position.y - y, current_pose_.position.x - x);
+        point_c.first = x + desired_dist * cos(theta);
+        point_c.second = y + desired_dist * sin(theta);
+        return point_c;
+    }
+
+    double calculateDeltaTheta(std::pair<double, double> goal)
+    {
+        double deltaX = goal.first - current_pose_.position.x;
+        double deltaY = goal.second - current_pose_.position.y;
+        double theta{0};
+        if (deltaX > 0)
+        {
+            theta = atan(deltaY / deltaX);
+        }
+        else if (deltaX < 0)
+        {
+            theta = atan(deltaY / deltaX);
+            if (deltaY > 0)
+            {
+                theta = M_PI + theta;
+            }
+            else if (deltaY < 0)
+            {
+                theta = theta - M_PI;
+            }
+            else
+            {
+                theta = M_PI;
+            }
+        }
+        else
+        {
+            if (deltaY > 0)
+            {
+                theta = M_PI / 2;
+            }
+            else if (deltaY < 0)
+            {
+                theta = -M_PI / 2;
+            }
+        }
+
+        tf2::Quaternion q(
+            current_pose_.orientation.x,
+            current_pose_.orientation.y,
+            current_pose_.orientation.z,
+            current_pose_.orientation.w);
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
+
+        double deltaTheta = theta - yaw;
+        if (deltaTheta > M_PI)
+        {
+            deltaTheta -= 2 * M_PI;
+        }
+        if (deltaTheta < -M_PI)
+        {
+            deltaTheta += 2 * M_PI;
+        }
+        return deltaTheta;
+    }
+
+    bool checkTangent()
     {
         double bot_x = current_pose_.position.x;
         double bot_y = current_pose_.position.y;
@@ -215,12 +329,11 @@ private:
         m.getRPY(roll, pitch, yaw);
 
         // Calculate the difference between the current yaw and the target angle
-        double angle_diff = normalizeAngle(target_angle - yaw);
-
+        double angle_diff = normalizeAngle(target_angle - yaw - M_PI / 2);
         if (fabs(angle_diff) > M_PI / 180) // If the difference is significant, keep rotating
         {
             geometry_msgs::msg::Twist twist_msg;
-            twist_msg.angular.z = (angle_diff > 0) ? 0.3 : -0.3; // Rotate to align with the target
+            twist_msg.angular.z = (angle_diff > 0) ? 0.2 : -0.2; // Rotate to align with the target
             vel_publisher_->publish(twist_msg);
             return false; // Still turning
         }
@@ -233,31 +346,6 @@ private:
         }
     }
 
-    // Function to move the TurtleBot to a desired distance from the center of the cylinder
-    bool moveToDistanceFromCenter(double target_distance)
-    {
-        double bot_x = current_pose_.position.x;
-        double bot_y = current_pose_.position.y;
-
-        double distance_to_center = hypot(center_x_ - bot_x, center_y_ - bot_y);
-
-        if (distance_to_center > target_distance + 0.05) // Move until we are within a small tolerance
-        {
-            geometry_msgs::msg::Twist twist_msg;
-            twist_msg.linear.x = 0.2; // Move forward
-            vel_publisher_->publish(twist_msg);
-            return false; // Still moving
-        }
-        else
-        {
-            geometry_msgs::msg::Twist twist_msg;
-            twist_msg.linear.x = 0.0; // Stop moving
-            vel_publisher_->publish(twist_msg);
-            return true; // Finished moving
-        }
-    }
-
-    // Normalize angle to range [-pi, pi]
     double normalizeAngle(double angle)
     {
         while (angle > M_PI)
@@ -282,24 +370,19 @@ private:
             RCLCPP_ERROR(this->get_logger(), "Action server not available");
             return;
         }
-
         // Cancel all goals
         auto cancel_future = action_client_->async_cancel_all_goals();
-
-        // Add a check to handle the future properly if needed
-        try
-        {
-            cancel_future.get(); // Ensure this doesn't throw an exception
-            RCLCPP_INFO(this->get_logger(), "Cancelled the current Nav2 goal");
-        }
-        catch (const std::exception &e)
-        {
-            RCLCPP_ERROR(this->get_logger(), "Failed to cancel Nav2 goal: %s", e.what());
-        }
     }
 
     void sendSavedGoalToNav2()
     {
+        saved_goal_.header.frame_id = "map";
+        saved_goal_.header.stamp = this->get_clock()->now();
+
+        saved_goal_.pose.position.x = -0.3;
+        saved_goal_.pose.position.y = -2.2;
+        saved_goal_.pose.orientation.z = 1;
+        saved_goal_.pose.orientation.w = 1.0;
 
         auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();
         goal_msg.pose = saved_goal_; // Set the saved goal as the new target
@@ -592,7 +675,7 @@ private:
     geometry_msgs::msg::Pose current_pose_;
     const double cylinder_diameter_;
 
-    bool circumnavigation_active_, align_to_center_active_, move_to_distance_active_;
+    bool circumnavigation_active_, move_to_point_c_, drive_around_cylinder_;
     double center_x_, center_y_;
     double initial_angle_, current_angle_;
 
