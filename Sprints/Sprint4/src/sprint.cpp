@@ -202,12 +202,25 @@ private:
             else if (!move_to_point_c_ && !drive_around_cylinder_)
             {
                 std::pair<double, double> center = std::make_pair(center_x_, center_y_);
-                checkTangent();
                 double deltaTheta = calculateDeltaTheta(center);
+                linearVel = 0;
+                rotVel = 2 * (deltaTheta - M_PI / 2);
+                if (rotVel > 0.5)
+                {
+                    rotVel = 0.5;
+                }
+                if (rotVel < -0.5)
+                {
+                    rotVel = -0.5;
+                }
+
+                geometry_msgs::msg::Twist twist_msg;
+                twist_msg.linear.x = linearVel;
+                twist_msg.angular.z = rotVel;
+                vel_publisher_->publish(twist_msg);
                 RCLCPP_INFO(this->get_logger(), "%f is angle", deltaTheta * (180 / M_PI));
                 if (abs(deltaTheta - M_PI / 2) < M_PI / 60)
                 {
-                    geometry_msgs::msg::Twist twist_msg;
                     twist_msg.linear.x = 0;
                     twist_msg.angular.z = 0;
                     vel_publisher_->publish(twist_msg);
@@ -309,41 +322,6 @@ private:
             deltaTheta += 2 * M_PI;
         }
         return deltaTheta;
-    }
-
-    bool checkTangent()
-    {
-        double bot_x = current_pose_.position.x;
-        double bot_y = current_pose_.position.y;
-
-        double target_angle = atan2(center_y_ - bot_y, center_x_ - bot_x); // Angle to the center
-
-        // Get the TurtleBot's current yaw angle (orientation)
-        tf2::Quaternion q(
-            current_pose_.orientation.x,
-            current_pose_.orientation.y,
-            current_pose_.orientation.z,
-            current_pose_.orientation.w);
-        tf2::Matrix3x3 m(q);
-        double roll, pitch, yaw;
-        m.getRPY(roll, pitch, yaw);
-
-        // Calculate the difference between the current yaw and the target angle
-        double angle_diff = normalizeAngle(target_angle - yaw - M_PI / 2);
-        if (fabs(angle_diff) > M_PI / 180) // If the difference is significant, keep rotating
-        {
-            geometry_msgs::msg::Twist twist_msg;
-            twist_msg.angular.z = (angle_diff > 0) ? 0.1 : -0.1; // Rotate to align with the target
-            vel_publisher_->publish(twist_msg);
-            return false; // Still turning
-        }
-        else
-        {
-            geometry_msgs::msg::Twist twist_msg;
-            twist_msg.angular.z = 0.0; // Stop rotation
-            vel_publisher_->publish(twist_msg);
-            return true; // Finished turning
-        }
     }
 
     double normalizeAngle(double angle)
