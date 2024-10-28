@@ -41,7 +41,7 @@ public:
 
         vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&CylinderDetector::timerCallback, this));
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&CylinderDetector::timerCallback, this));
 
         // Initialize the action client for Nav2's NavigateToPose action
         action_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
@@ -204,14 +204,14 @@ private:
                 std::pair<double, double> center = std::make_pair(center_x_, center_y_);
                 double deltaTheta = calculateDeltaTheta(center);
                 linearVel = 0;
-                rotVel = 2 * (deltaTheta - M_PI / 2);
-                if (rotVel > 0.5)
+                rotVel = 1.5 * (deltaTheta - M_PI / 2);
+                if (rotVel > 0.4)
                 {
-                    rotVel = 0.5;
+                    rotVel = 0.4;
                 }
-                if (rotVel < -0.5)
+                if (rotVel < -0.4)
                 {
-                    rotVel = -0.5;
+                    rotVel = -0.4;
                 }
 
                 geometry_msgs::msg::Twist twist_msg;
@@ -231,7 +231,7 @@ private:
             {
                 geometry_msgs::msg::Twist twist_msg;
                 linearVel = 0.2;          // Linear speed (m/s)
-                rotVel = linearVel / 0.8; // Circumnavigation radius
+                rotVel = linearVel / 0.6; // Circumnavigation radius
 
                 twist_msg.linear.x = linearVel;
                 twist_msg.angular.z = rotVel;
@@ -240,7 +240,7 @@ private:
 
                 // Track angle covered, complete after one circle
                 double adjustment_factor = 0.68;
-                current_angle_ += rotVel * 0.1 * adjustment_factor;
+                current_angle_ += rotVel * 0.02 * adjustment_factor;
                 RCLCPP_INFO(this->get_logger(), "Rotated %f degrees around the cylinder", current_angle_ * (180 / M_PI));
                 if (current_angle_ >= 2 * M_PI)
                 {
@@ -259,7 +259,7 @@ private:
     std::pair<double, double> calculatePointC(double x, double y)
     {
         std::pair<double, double> point_c;
-        double desired_dist = 0.7;
+        double desired_dist = 0.6;
         double theta = atan2(current_pose_.position.y - y, current_pose_.position.x - x);
         point_c.first = x + desired_dist * cos(theta);
         point_c.second = y + desired_dist * sin(theta);
