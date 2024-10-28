@@ -466,7 +466,7 @@ private:
         }
 
         const double target_radius = cylinder_diameter_ / 2.0;
-        const double radius_tolerance = 0.01; // Allowable deviation from the target radius
+        const double radius_tolerance = 0.03; // Allowable deviation from the target radius
         std::vector<std::pair<double, double>> potential_centers;
         std::vector<double> radii;
 
